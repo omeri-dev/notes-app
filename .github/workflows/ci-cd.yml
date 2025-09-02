@@ -2,9 +2,9 @@ name: CI/CD Notes App
 
 on:
   push:
-    branches: [ main ]  # <-- rubah jika branch default repo kamu bukan main
+    branches: [ main, sesi30-decsecops ]  # <-- rubah jika branch default repo kamu bukan main
   pull_request:
-    branches: [ main ]  # <-- rubah jika branch default repo kamu bukan main
+    branches: [ main, sesi30-decsecops ]  # <-- rubah jika branch default repo kamu bukan main
 
 jobs:
 
