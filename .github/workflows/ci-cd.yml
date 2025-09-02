@@ -2,9 +2,9 @@ name: CI/CD Notes App
 
 on:
   push:
-    branches: [ main, sesi30-decsecops ]  # <-- rubah jika branch default repo kamu bukan main
+    branches: [ main, sesi30-decsecops ]
   pull_request:
-    branches: [ main, sesi30-decsecops ]  # <-- rubah jika branch default repo kamu bukan main
+    branches: [ main, sesi30-decsecops ]
 
 jobs:
 
@@ -24,7 +24,9 @@ jobs:
           pip install -r requirements.txt
           pip install -r dev-requirements.txt
       - name: Run tests
-        run: pytest -v
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          pytest -v
 
   # 2. SAST (Bandit)
   sast:
@@ -39,7 +41,7 @@ jobs:
       - name: Install Bandit
         run: pip install bandit
       - name: Run Bandit
-        run: bandit -r .
+        run: bandit -r . -ll
 
   # 3. SCA (pip-audit)
   sca:
@@ -54,7 +56,7 @@ jobs:
       - name: Install pip-audit
         run: pip install pip-audit
       - name: Run pip-audit
-        run: pip-audit
+        run: pip-audit --exit-code 1
 
   # 4. Secret Scan (Gitleaks)
   secret_scan:
@@ -66,7 +68,7 @@ jobs:
         run: |
           curl -sSL https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz | tar -xz -C /usr/local/bin
       - name: Run Gitleaks
-        run: gitleaks detect --source . --verbose
+        run: gitleaks detect --source . --verbose --exit-code 1
 
   # 5. Build & Push Docker Image
   build_and_push:
@@ -78,16 +80,16 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}  # <-- rubah dengan secret GitHub kamu
-          password: ${{ secrets.DOCKERHUB_TOKEN }}     # <-- rubah dengan secret GitHub kamu
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build Docker Image
         run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app  # <-- rubah 'notes-app' sesuai nama repo Docker Hub
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app
           COMMIT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
-          docker build -t $IMAGE_NAME:latest -t $IMAGE_NAME:$COMMIT_SHA .
+          docker build --no-cache -t $IMAGE_NAME:latest -t $IMAGE_NAME:$COMMIT_SHA .
       - name: Push Docker Image
         run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app  # <-- rubah 'notes-app' sesuai nama repo Docker Hub
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app
           COMMIT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
           docker push $IMAGE_NAME:latest
           docker push $IMAGE_NAME:$COMMIT_SHA
@@ -107,6 +109,6 @@ jobs:
           sudo apt install -y trivy
       - name: Scan Docker Image
         run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app:latest  # <-- rubah 'notes-app' sesuai nama repo Docker Hub
+          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app:latest
           trivy image --exit-code 1 $IMAGE_NAME
 
