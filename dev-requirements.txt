@@ -48,3 +48,7 @@ typing_extensions==4.15.0
 urllib3==2.5.0
 uvicorn==0.30.6
 webencodings==0.5.1
+jinja2>=3.1.6
+cryptography>=43.0.1
+twisted>=24.7.0
+configobj>=5.0.9
