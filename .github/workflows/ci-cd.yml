@@ -2,9 +2,9 @@ name: CI/CD Notes App
 
 on:
   push:
-    branches: [ main, sesi30-decsecops ]
+    branches: [ main, sesi30-decsecops ]  # rubah jika branch default repo kamu beda
   pull_request:
-    branches: [ main, sesi30-decsecops ]
+    branches: [ main, sesi30-decsecops ]  # rubah jika branch default repo kamu beda
 
 jobs:
 
@@ -13,9 +13,9 @@ jobs:
     name: Unit Test (pytest)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install dependencies
@@ -24,51 +24,46 @@ jobs:
           pip install -r requirements.txt
           pip install -r dev-requirements.txt
       - name: Run tests
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          pytest -v
+        run: PYTHONPATH=. pytest -v
 
   # 2. SAST (Bandit)
   sast:
     name: Static Analysis (Bandit)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install Bandit
         run: pip install bandit
       - name: Run Bandit
-        run: bandit -r . -ll
+        run: bandit -r app tests
 
   # 3. SCA (pip-audit)
   sca:
     name: Software Composition Analysis (pip-audit)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install pip-audit
         run: pip install pip-audit
       - name: Run pip-audit
-        run: pip-audit --exit-code 1
+        run: pip-audit
 
   # 4. Secret Scan (Gitleaks)
   secret_scan:
     name: Secret Scan (Gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install Gitleaks
-        run: |
-          curl -sSL https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64.tar.gz | tar -xz -C /usr/local/bin
+      - uses: actions/checkout@v4
       - name: Run Gitleaks
-        run: gitleaks detect --source . --verbose --exit-code 1
+        uses: zricethezav/gitleaks-action@v2
 
   # 5. Build & Push Docker Image
   build_and_push:
@@ -76,23 +71,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit_test, sast, sca, secret_scan]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build Docker Image
-        run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app
-          COMMIT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
-          docker build --no-cache -t $IMAGE_NAME:latest -t $IMAGE_NAME:$COMMIT_SHA .
-      - name: Push Docker Image
-        run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app
-          COMMIT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
-          docker push $IMAGE_NAME:latest
-          docker push $IMAGE_NAME:$COMMIT_SHA
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/notes-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/notes-app:${{ github.sha }}
 
   # 6. Image Scan (Trivy)
   image_scan:
@@ -100,15 +92,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push
     steps:
-      - name: Install Trivy
-        run: |
-          sudo apt install -y wget apt-transport-https gnupg lsb-release
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-          sudo apt update
-          sudo apt install -y trivy
-      - name: Scan Docker Image
-        run: |
-          IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/notes-app:latest
-          trivy image --exit-code 1 $IMAGE_NAME
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/notes-app:latest
+          exit-code: '1'
 
