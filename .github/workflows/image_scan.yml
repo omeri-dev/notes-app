@@ -1,11 +1,19 @@
+name: Image Scan
+
+on:
+  workflow_call:
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
 jobs:
   image_scan:
     runs-on: ubuntu-latest
-    needs: build_and_push
     steps:
       - uses: actions/checkout@v4
 
-      # Login Docker untuk Trivy
       - name: Docker login for Trivy
         uses: docker/login-action@v2
         with:
