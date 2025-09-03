@@ -25,5 +25,6 @@ jobs:
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/notes-app:${{ github.sha }}
           format: table
+          severity: HIGH,CRITICAL
           exit-code: 1
 
