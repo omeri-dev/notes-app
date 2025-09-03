@@ -1,0 +1,31 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ sesi30-devsecops ]
+  pull_request:
+    branches: [ sesi30-devsecops ]
+
+jobs:
+  unit_test:
+    uses: ./.github/workflows/unit_test.yml
+
+  sast:
+    needs: unit_test
+    uses: ./.github/workflows/sast.yml
+
+  sca:
+    needs: sast
+    uses: ./.github/workflows/sca.yml
+
+  secret_scan:
+    needs: sca
+    uses: ./.github/workflows/secret_scan.yml
+
+  build_and_push:
+    needs: secret_scan
+    uses: ./.github/workflows/build_and_push.yml
+
+  image_scan:
+    needs: build_and_push
+    uses: ./.github/workflows/image_scan.yml
