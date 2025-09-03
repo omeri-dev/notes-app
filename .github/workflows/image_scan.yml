@@ -1,0 +1,16 @@
+name: Image Scan
+
+on:
+  workflow_call:
+
+jobs:
+  image_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.18.0
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/notes-app:${{ github.sha }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
