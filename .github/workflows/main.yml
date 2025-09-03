@@ -32,3 +32,6 @@ jobs:
   image_scan:
     needs: build_and_push
     uses: ./.github/workflows/image_scan.yml
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
