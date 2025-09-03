@@ -26,4 +26,4 @@ jobs:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/notes-app:${{ github.sha }}
           format: table
           exit-code: 1
-          ignore-unfixed: true
+
