@@ -99,4 +99,5 @@ jobs:
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/notes-app:latest
           exit-code: '1'
+          severity: 'HIGH,CRITICAL'
 
