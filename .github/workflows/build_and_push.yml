@@ -2,7 +2,7 @@ name: Build and Push Docker
 
 on:
   workflow_call:
-      secrets:
+    secrets:
       DOCKERHUB_USERNAME:
         required: true
       DOCKERHUB_TOKEN:
